@@ -7,6 +7,9 @@ import Text.Read            ( readMaybe     )
 import Text.Printf          ( printf        )
 import Paths_hplcToCsv      ( version       )
 import Data.Version         ( showVersion   )
+import Control.Monad.State  ( StateT
+                            , StateT (..)
+                            , evalStateT    )
 
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -34,9 +37,7 @@ instance Show Chrom where
                     , "  signal units: " ++ sunits c
                     , printf trs (0 :: Double) (timeMax c) ]
 
-type ParseState = ([String], Chrom)
-type Parser     = Either String ParseState
-type Setter a   = a -> Chrom -> Chrom
+type Parser a = StateT [String] (Either String) a
 
 ---------------------------------------------------------------------
 ---------------------------------------------------------------------
@@ -59,9 +60,9 @@ handleArg fp          = do
 
 convert :: FilePath -> IO ()
 convert fn = do
-    xs <- readFile fn
+    xs <- lines <$> readFile fn
     putStrLn $ "File: " ++ fn
-    case parse xs of
+    case evalStateT parse xs of
          Left err -> dispErr err
          Right c  -> do let csvfn = changeName fn
                         putStrLn $ "file converted to: " ++ csvfn
@@ -88,7 +89,7 @@ dispErr err = putStrLn $ "Error: " ++ err
 -- Pure
 
 ---------------------------------------------------------------------
--- Helper functions and setters for the Chrom type
+-- Helper functions
 
 changeName :: FilePath -> FilePath
 changeName f = takeWhile (/= '.') f ++ ".csv"
@@ -96,20 +97,8 @@ changeName f = takeWhile (/= '.') f ++ ".csv"
 timeMax :: Chrom -> Double
 timeMax c = (fromIntegral . ntimes $ c) * tmult c / srate c
 
-setSampId, setMethod, setAqDate, setTunits, setSunits :: Setter String
-setSampId s c = c { sampid = s }
-setMethod s c = c { method = s }
-setAqDate s c = c { aqdate = s }
-setTunits s c = c { tunits = s }
-setSunits s c = c { sunits = s }
-
-setSRate, setTMult, setSMult :: Setter Double
-setSRate  x c = c { srate  = x }
-setTMult  x c = c { tmult  = x }
-setSMult  x c = c { smult  = x }
-
-setNTimes :: Setter Int
-setNTimes x c = c { ntimes = x }
+cleanString :: String -> String
+cleanString = unwords . words
 
 ---------------------------------------------------------------------
 -- CSV Conversion
@@ -134,57 +123,48 @@ plotChrom c = intercalate "\n" . zipWith go (getTimes c) $ (signals c)
 ---------------------------------------------------------------------
 -- Parser
 
-parse :: String -> Either String Chrom
-parse x =
-    initialize x
-    >>= readParStr "Sample ID" setSampId
-    >>= readParStr "Method" setMethod
-    >>= readParStr "Acquisition Date and Time" setAqDate
-    >>= readParVal "Sampling Rate" setSRate
-    >>= readParVal "Total Data Points" setNTimes
-    >>= readParStr "X Axis Title" setTunits
-    >>= readParStr "Y Axis Title" setSunits
-    >>= readParVal "X Axis Multiplier" setTMult
-    >>= readParVal "Y Axis Multiplier" setSMult
-    >>= readAbsorbances
-    >>= return . snd
+parse :: Parser Chrom
+parse = do
+    sid <- readParStr "Sample ID"
+    mt  <- readParStr "Method"
+    dt  <- readParStr "Acquisition Date and Time"
+    rt  <- readParVal "Sampling Rate"
+    np  <- readParVal "Total Data Points"
+    xt  <- readParStr "X Axis Title"
+    yt  <- readParStr "Y Axis Title"
+    xm  <- readParVal "X Axis Multiplier"
+    ym  <- readParVal "Y Axis Multiplier"
+    as  <- readAbsorbances
+    return Chrom { sampid  = sid
+                 , method  = mt
+                 , aqdate  = dt
+                 , tunits  = xt
+                 , sunits  = yt
+                 , srate   = rt
+                 , ntimes  = np
+                 , tmult   = xm
+                 , smult   = ym
+                 , signals = as }
 
-initialize :: String -> Parser
-initialize x = Right (lines x, c0)
-    where c0 = Chrom { sampid  = []
-                     , method  = []
-                     , aqdate  = []
-                     , tunits  = []
-                     , sunits  = []
-                     , srate   = 0
-                     , ntimes  = 0
-                     , tmult   = 0
-                     , smult   = 0
-                     , signals = [] }
+readParStr :: String -> Parser String
+readParStr s = StateT $ go
+    where s'         = s ++ ":"
+          go []      = Left $ "Cannot parse out: " ++ s
+          go (x:xs') | u == s'   = Right (cleanString v, xs')
+                     | otherwise = go xs'
+                     where (u,v) = splitAt (length s') x
 
-cleanString :: String -> String
-cleanString = unwords . words
+readParVal :: Read a => String -> Parser a
+readParVal s = StateT $ go
+    where s'         = s ++ ":"
+          go []      = Left $ "Cannot parse out: " ++ s
+          go (x:xs') | u == s'   = f . readMaybe . head . words $ v
+                     | otherwise = go xs'
+                     where (u,v)      = splitAt (length s') x
+                           f Nothing  = Left $ "Cannot read value for: " ++ s
+                           f (Just w) = Right (w, xs')
 
-readParStr :: String -> Setter String -> ParseState -> Parser
-readParStr p0 _ ([], _)   = Left $ "Cannot parse out: " ++ p0
-readParStr p0 f (x:xs, c)
-    | u == p1   = Right ( xs, f (cleanString v) c )
-    | otherwise = readParStr p0 f (xs, c)
-    where p1    = p0 ++ ":"
-          (u,v) = splitAt (length p1) x
-
-readParVal :: Read a => String -> Setter a -> ParseState -> Parser
-readParVal p0 _ ([], _)   = Left $ "Cannot parse out: " ++ p0
-readParVal p0 f (x:xs, c)
-    | u == p1   = result
-    | otherwise = readParVal p0 f (xs, c)
-    where p1     = p0 ++ ":"
-          (u, v) = splitAt (length p1) x
-          result = case readMaybe . head . words $ v of
-                        Nothing -> Left $ "Cannot read value for: " ++ p0
-                        Just n  -> Right ( xs, f n c )
-
-readAbsorbances :: ParseState -> Parser
-readAbsorbances (xs, c) = case mapM readMaybe xs of
-                               Nothing -> Left "Cannot read the absorbances"
-                               Just as -> Right ([], c { signals = as } )
+readAbsorbances :: Parser [Double]
+readAbsorbances = StateT $ go . mapM readMaybe
+    where go Nothing   = Left "Cannot read the absorbances"
+          go (Just xs) = Right (xs, [])
