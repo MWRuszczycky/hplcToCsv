@@ -147,7 +147,7 @@ parse = do
                  , signals = as }
 
 readParStr :: String -> Parser String
-readParStr s = StateT $ go
+readParStr s = StateT go
     where s'         = s ++ ":"
           go []      = Left $ "Cannot parse out: " ++ s
           go (x:xs') | u == s'   = Right (cleanString v, xs')
@@ -155,7 +155,7 @@ readParStr s = StateT $ go
                      where (u,v) = splitAt (length s') x
 
 readParVal :: Read a => String -> Parser a
-readParVal s = StateT $ go
+readParVal s = StateT go
     where s'         = s ++ ":"
           go []      = Left $ "Cannot parse out: " ++ s
           go (x:xs') | u == s'   = f . readMaybe . head . words $ v
