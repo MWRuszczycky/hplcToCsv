@@ -104,7 +104,7 @@ cleanString = unwords . words
 -- CSV Conversion
 
 toCsv :: Chrom -> String
-toCsv c = intercalate "\n" hdr
+toCsv c = intercalate "\n" hdr ++ "\n"
     where hdr = [ "# Sample ID:    " ++ sampid c
                 , "# Method file:  " ++ method c
                 , "# Date & time:  " ++ aqdate c
