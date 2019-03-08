@@ -16,7 +16,7 @@ import Test.Hspec                   ( Spec (..)
 
 main :: IO ()
 main = hspec $ around_ manageIOTests $ do
-    describe "hplcToCsv converts to csv" $
+    describe "hplcToCsv converts Beckman output to csv" $
         mockConversion
 
 mockConversion :: Spec
