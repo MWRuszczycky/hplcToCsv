@@ -2,17 +2,19 @@ module Controller
     ( routeArg
     ) where
 
-import Control.Monad.State  ( evalStateT    )
-import System.Directory     ( doesFileExist )
+import Control.Monad.State  ( evalStateT        )
+import System.Directory     ( doesFileExist     )
 import Types                ( Chrom  (..)
-                            , Parser (..)   )
-import Paths_hplcToCsv      ( version       )
-import Data.Version         ( showVersion   )
-import Text.Printf          ( printf        )
+                            , Parser (..)       )
+import Paths_hplcToCsv      ( version           )
+import Data.Version         ( showVersion       )
+import Text.Printf          ( printf            )
 import Model                ( changeName
-                            , summarize
+                            , formatError
+                            , missingFileError
+                            , conversionInfo
                             , toCsv
-                            , parse         )
+                            , parse             )
 
 ---------------------------------------------------------------------
 -- Main controller
@@ -25,22 +27,20 @@ routeArg "-v"        = dispVersion
 routeArg fp          = do
     exists <- doesFileExist fp
     if exists
-       then convert fp
-       else dispErr $ "file '" ++ fp ++ "' does not exist"
-    putStrLn ""
+       then convert fp >>= putStrLn
+       else putStrLn . missingFileError $ fp
 
 ---------------------------------------------------------------------
 
-convert :: FilePath -> IO ()
+convert :: FilePath -> IO String
 convert fn = do
     xs <- lines <$> readFile fn
     putStrLn $ "File: " ++ fn
     case evalStateT parse xs of
-         Left err -> dispErr err
+         Left err -> pure . formatError $ err
          Right c  -> do let csvfn = changeName fn
-                        putStrLn $ "file converted to: " ++ csvfn
-                        putStrLn . summarize $ c
                         writeFile csvfn . toCsv $ c
+                        pure $ conversionInfo csvfn c
 
 dispHelp :: IO ()
 dispHelp = do
@@ -53,6 +53,3 @@ dispHelp = do
 
 dispVersion :: IO ()
 dispVersion = putStrLn $ "hplcToCsv-" ++ showVersion version
-
-dispErr :: String -> IO ()
-dispErr err = putStrLn $ "Error: " ++ err

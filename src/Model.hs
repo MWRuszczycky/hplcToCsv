@@ -2,7 +2,9 @@ module Model
     ( changeName
     , toCsv
     , parse
-    , summarize
+    , conversionInfo
+    , formatError
+    , missingFileError
     ) where
 
 import Control.Monad.State  ( StateT (..)   )
@@ -25,9 +27,10 @@ cleanString :: String -> String
 cleanString = unwords . words
 
 ---------------------------------------------------------------------
--- Summarizing a chromatogram
+-- Output formatting
 
 summarize :: Chrom -> String
+-- ^Summarize a chromatogram for display
 summarize c= intercalate "\n" xs
     where trs = "  time range:   %0.1f--%0.1f " ++ tunits c
           xs  = [ "Chromatogram summary:"
@@ -36,6 +39,19 @@ summarize c= intercalate "\n" xs
                 , "  date & time:  " ++ aqdate c
                 , "  signal units: " ++ sunits c
                 , printf trs (0 :: Double) (timeMax c) ]
+
+conversionInfo :: FilePath -> Chrom -> String
+conversionInfo fp c = intercalate "\n" hs
+    where hs = [ "File converted to: " ++ fp
+               , summarize c
+               ]
+
+formatError :: String -> String
+-- ^Format an error string.
+formatError = (++) "Error: "
+
+missingFileError :: String -> String
+missingFileError fp =formatError $ "file '" ++ fp ++ "' does not exist"
 
 ---------------------------------------------------------------------
 -- CSV Conversion
