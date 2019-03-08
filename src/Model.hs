@@ -4,7 +4,6 @@ module Model
     , parse
     , conversionInfo
     , formatError
-    , missingFileError
     ) where
 
 import Control.Monad.State  ( StateT (..)   )
@@ -47,18 +46,19 @@ summarize c= intercalate "\n" xs
                 , "  signal units: " ++ sunits c
                 , printf trs (0 :: Double) (timeMax c) ]
 
-conversionInfo :: FilePath -> Chrom -> String
-conversionInfo fp c = intercalate "\n" hs
-    where hs = [ "File converted to: " ++ fp
+conversionInfo :: FilePath -> FilePath -> Chrom -> String
+conversionInfo fpOld fpNew c = intercalate "\n" hs
+    where hs = [ "File input: " ++ fpOld
+               , "File converted to: " ++ fpNew
                , summarize c
                ]
 
-formatError :: String -> String
+formatError :: FilePath -> String -> String
 -- ^Format an error string.
-formatError = (++) "Error: "
-
-missingFileError :: String -> String
-missingFileError fp =formatError $ "file '" ++ fp ++ "' does not exist"
+formatError fp err = intercalate "\n" hs
+    where hs = [ "File input: " ++ fp
+               , "  Error: " ++ err
+               ]
 
 ---------------------------------------------------------------------
 -- CSV Conversion

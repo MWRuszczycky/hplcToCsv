@@ -4,6 +4,7 @@ module Controller
 
 import Control.Monad.State  ( evalStateT        )
 import System.Directory     ( doesFileExist     )
+import Data.List            ( intercalate       )
 import Types                ( Chrom  (..)
                             , Parser (..)       )
 import Paths_hplcToCsv      ( version           )
@@ -11,7 +12,6 @@ import Data.Version         ( showVersion       )
 import Text.Printf          ( printf            )
 import Model                ( changeName
                             , formatError
-                            , missingFileError
                             , conversionInfo
                             , toCsv
                             , parse             )
@@ -19,37 +19,36 @@ import Model                ( changeName
 ---------------------------------------------------------------------
 -- Main controller
 
-routeArg :: String -> IO ()
-routeArg "--help"    = dispHelp
-routeArg "-h"        = dispHelp
-routeArg "--version" = dispVersion
-routeArg "-v"        = dispVersion
+routeArg :: String -> IO String
+routeArg "--help"    = pure helpStr
+routeArg "-h"        = pure helpStr
+routeArg "--version" = pure versionStr
+routeArg "-v"        = pure versionStr
 routeArg fp          = do
     exists <- doesFileExist fp
     if exists
-       then convert fp >>= putStrLn
-       else putStrLn . missingFileError $ fp
+       then convert fp
+       else pure . formatError fp $ "File does not exist"
 
 ---------------------------------------------------------------------
 
 convert :: FilePath -> IO String
 convert fn = do
     xs <- lines <$> readFile fn
-    putStrLn $ "File: " ++ fn
     case evalStateT parse xs of
-         Left err -> pure . formatError $ err
+         Left err -> pure . formatError fn $ err
          Right c  -> do let csvfn = changeName fn
                         writeFile csvfn . toCsv $ c
-                        pure $ conversionInfo csvfn c
+                        pure $ conversionInfo fn csvfn c
 
-dispHelp :: IO ()
-dispHelp = do
-    dispVersion
-    putStrLn "usage:"
-    putStrLn "  hplcToCsv filename [filename]...\n"
-    putStrLn "options:"
-    putStrLn "  -h, --help:    Show this help"
-    putStrLn "  -v, --version: Display the version number"
+helpStr :: String
+helpStr = intercalate "\n" hs
+    where hs = [ "usage:"
+               , "  hplcToCsv filename [filename]..."
+               , "options:"
+               , "  -h, --help:    Show this help"
+               , "  -v, --version: Display the version number"
+               ]
 
-dispVersion :: IO ()
-dispVersion = putStrLn $ "hplcToCsv-" ++ showVersion version
+versionStr :: String
+versionStr = "hplcToCsv-" ++ showVersion version

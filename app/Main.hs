@@ -1,7 +1,9 @@
 module Main where
 
-import System.Environment   ( getArgs   )
-import Controller           ( routeArg  )
+import Data.List            ( intercalate )
+import System.Environment   ( getArgs     )
+import Controller           ( routeArg    )
 
 main :: IO ()
-main = getArgs >>= mapM_ routeArg
+main = do results <- getArgs >>= mapM routeArg
+          putStrLn . intercalate "\n\n" $ results
