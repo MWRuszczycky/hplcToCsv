@@ -1,92 +1,14 @@
-module Main where
+module Model
+    ( changeName
+    , toCsv
+    , parse
+    ) where
 
-import System.Environment   ( getArgs       )
-import System.Directory     ( doesFileExist )
+import Control.Monad.State  ( StateT (..)   )
 import Data.List            ( intercalate   )
 import Text.Read            ( readMaybe     )
-import Text.Printf          ( printf        )
-import Paths_hplcToCsv      ( version       )
-import Data.Version         ( showVersion   )
-import Control.Monad.State  ( StateT
-                            , StateT (..)
-                            , evalStateT    )
-
----------------------------------------------------------------------
----------------------------------------------------------------------
--- Types
-
-data Chrom = Chrom { sampid   :: String
-                   , method   :: String
-                   , aqdate   :: String
-                   , tunits   :: String
-                   , sunits   :: String
-                   , srate    :: Double
-                   , ntimes   :: Int
-                   , tmult    :: Double
-                   , smult    :: Double
-                   , signals  :: [Double]
-                   }
-
-instance Show Chrom where
-    show c = intercalate "\n" xs
-        where trs = "  time range:   %0.1f--%0.1f " ++ tunits c
-              xs  = [ "Chromatogram summary:"
-                    , "  sample id:    " ++ sampid c
-                    , "  method file:  " ++ method c
-                    , "  date & time:  " ++ aqdate c
-                    , "  signal units: " ++ sunits c
-                    , printf trs (0 :: Double) (timeMax c) ]
-
-type Parser a = StateT [String] (Either String) a
-
----------------------------------------------------------------------
----------------------------------------------------------------------
--- IO
-
-main :: IO ()
-main = getArgs >>= mapM_ handleArg
-
-handleArg :: String -> IO ()
-handleArg "--help"    = dispHelp
-handleArg "-h"        = dispHelp
-handleArg "--version" = dispVersion
-handleArg "-v"        = dispVersion
-handleArg fp          = do
-    exists <- doesFileExist fp
-    if exists
-       then convert fp
-       else dispErr $ "file '" ++ fp ++ "' does not exist"
-    putStrLn ""
-
-convert :: FilePath -> IO ()
-convert fn = do
-    xs <- lines <$> readFile fn
-    putStrLn $ "File: " ++ fn
-    case evalStateT parse xs of
-         Left err -> dispErr err
-         Right c  -> do let csvfn = changeName fn
-                        putStrLn $ "file converted to: " ++ csvfn
-                        print c
-                        writeFile csvfn . toCsv $ c
-
-dispHelp :: IO ()
-dispHelp = do
-    dispVersion
-    putStrLn "usage:"
-    putStrLn "  hplcToCsv filename [filename]...\n"
-    putStrLn "options:"
-    putStrLn "  -h, --help:    Show this help"
-    putStrLn "  -v, --version: Display the version number"
-
-dispVersion :: IO ()
-dispVersion = putStrLn $ "hplcToCsv-" ++ showVersion version
-
-dispErr :: String -> IO ()
-dispErr err = putStrLn $ "Error: " ++ err
-
----------------------------------------------------------------------
----------------------------------------------------------------------
--- Pure
+import Types                ( Chrom  (..)
+                            , Parser (..)   )
 
 ---------------------------------------------------------------------
 -- Helper functions
