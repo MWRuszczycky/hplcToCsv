@@ -2,10 +2,12 @@ module Model
     ( changeName
     , toCsv
     , parse
+    , summarize
     ) where
 
 import Control.Monad.State  ( StateT (..)   )
 import Data.List            ( intercalate   )
+import Text.Printf          ( printf        )
 import Text.Read            ( readMaybe     )
 import Types                ( Chrom  (..)
                             , Parser (..)   )
@@ -21,6 +23,19 @@ timeMax c = (fromIntegral . ntimes $ c) * tmult c / srate c
 
 cleanString :: String -> String
 cleanString = unwords . words
+
+---------------------------------------------------------------------
+-- Summarizing a chromatogram
+
+summarize :: Chrom -> String
+summarize c= intercalate "\n" xs
+    where trs = "  time range:   %0.1f--%0.1f " ++ tunits c
+          xs  = [ "Chromatogram summary:"
+                , "  sample id:    " ++ sampid c
+                , "  method file:  " ++ method c
+                , "  date & time:  " ++ aqdate c
+                , "  signal units: " ++ sunits c
+                , printf trs (0 :: Double) (timeMax c) ]
 
 ---------------------------------------------------------------------
 -- CSV Conversion

@@ -10,6 +10,7 @@ import Paths_hplcToCsv      ( version       )
 import Data.Version         ( showVersion   )
 import Text.Printf          ( printf        )
 import Model                ( changeName
+                            , summarize
                             , toCsv
                             , parse         )
 
@@ -38,7 +39,7 @@ convert fn = do
          Left err -> dispErr err
          Right c  -> do let csvfn = changeName fn
                         putStrLn $ "file converted to: " ++ csvfn
-                        print c
+                        putStrLn . summarize $ c
                         writeFile csvfn . toCsv $ c
 
 dispHelp :: IO ()
