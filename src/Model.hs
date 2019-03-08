@@ -18,7 +18,14 @@ import Types                ( Chrom  (..)
 -- Helper functions
 
 changeName :: FilePath -> FilePath
-changeName f = takeWhile (/= '.') f ++ ".csv"
+-- ^Replace the file extension with '.csv' ensuring that the new name
+-- does not conflict with the old name.
+changeName f
+    | null name    = f ++ ".csv"
+    | ext == "csv" = f ++ ".csv"
+    | otherwise    = name ++ "csv"
+    where (rExt, rName) = break (== '.') . reverse $ f
+          (name, ext)   = ( reverse rName, reverse rExt )
 
 timeMax :: Chrom -> Double
 timeMax c = (fromIntegral . ntimes $ c) * tmult c / srate c
