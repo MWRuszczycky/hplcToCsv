@@ -9,10 +9,10 @@ import Data.List            ( intercalate   )
 data Chrom = Chrom { sampid   :: String
                    , method   :: String
                    , aqdate   :: String
-                   , tunits   :: String
-                   , sunits   :: String
                    , srate    :: Double
                    , ntimes   :: Int
+                   , tunits   :: String
+                   , sunits   :: String
                    , tmult    :: Double
                    , smult    :: Double
                    , signals  :: [Double]

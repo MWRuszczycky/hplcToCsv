@@ -6,7 +6,8 @@ module Model
     , formatError
     ) where
 
-import Control.Monad.State  ( StateT (..)   )
+import Control.Monad.State  ( StateT (..)
+                            , lift          )
 import Data.List            ( intercalate   )
 import Text.Printf          ( printf        )
 import Text.Read            ( readMaybe     )
@@ -84,27 +85,25 @@ plotChrom c = intercalate "\n" . zipWith go (getTimes c) $ (signals c)
 -- Parser
 
 parse :: Parser Chrom
-parse = do
-    sid <- readParStr "Sample ID"
-    mt  <- readParStr "Method"
-    dt  <- readParStr "Acquisition Date and Time"
-    rt  <- readParVal "Sampling Rate"
-    np  <- readParVal "Total Data Points"
-    xt  <- readParStr "X Axis Title"
-    yt  <- readParStr "Y Axis Title"
-    xm  <- readParVal "X Axis Multiplier"
-    ym  <- readParVal "Y Axis Multiplier"
-    as  <- readAbsorbances
-    return Chrom { sampid  = sid
-                 , method  = mt
-                 , aqdate  = dt
-                 , tunits  = xt
-                 , sunits  = yt
-                 , srate   = rt
-                 , ntimes  = np
-                 , tmult   = xm
-                 , smult   = ym
-                 , signals = as }
+parse = readChrom >>= checkData
+    where readChrom = Chrom <$> readParStr "Sample ID"
+                            <*> readParStr "Method"
+                            <*> readParStr "Acquisition Date and Time"
+                            <*> readParVal "Sampling Rate"
+                            <*> readParVal "Total Data Points"
+                            <*> readParStr "X Axis Title"
+                            <*> readParStr "Y Axis Title"
+                            <*> readParVal "X Axis Multiplier"
+                            <*> readParVal "Y Axis Multiplier"
+                            <*> readAbsorbances
+
+checkData :: Chrom -> Parser Chrom
+checkData c
+    | nt == ns  = pure c
+    | otherwise = lift . Left $ err
+    where nt  = ntimes c
+          ns  = length . signals $ c
+          err = "Total data points does not equal absorbance count."
 
 readParStr :: String -> Parser String
 readParStr s = StateT go
