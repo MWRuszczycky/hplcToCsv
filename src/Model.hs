@@ -99,10 +99,9 @@ parse = readChrom >>= checkData
 
 checkData :: Chrom -> Parser Chrom
 checkData c
-    | nt == ns  = pure c
-    | otherwise = lift . Left $ err
-    where nt  = nTimes c
-          ns  = length . signals $ c
+    | timePointsMatch = pure c
+    | otherwise       = lift . Left $ err
+    where timePointsMatch = nTimes c == ( length . signals ) c
           err = "Total data points does not equal absorbance count."
 
 readParStr :: String -> Parser String

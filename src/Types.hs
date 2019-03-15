@@ -4,7 +4,6 @@ module Types
     ) where
 
 import Control.Monad.State  ( StateT (..)   )
-import Data.Text            ( Text          )
 import Data.List            ( intercalate   )
 
 data Chrom = Chrom { sampleID :: String
