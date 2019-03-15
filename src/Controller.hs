@@ -12,8 +12,8 @@ import Data.Version         ( showVersion       )
 import Text.Printf          ( printf            )
 import Model                ( changeName
                             , formatError
-                            , conversionInfo
                             , toCsv
+                            , toInfo
                             , parse             )
 
 ---------------------------------------------------------------------
@@ -39,7 +39,7 @@ convert fn = do
          Left err -> pure . formatError fn $ err
          Right c  -> do let csvfn = changeName fn
                         writeFile csvfn . toCsv $ c
-                        pure $ conversionInfo fn csvfn c
+                        pure $ toInfo fn csvfn c
 
 helpStr :: String
 helpStr = intercalate "\n" hs
