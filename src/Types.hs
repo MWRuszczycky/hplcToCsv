@@ -4,18 +4,20 @@ module Types
     ) where
 
 import Control.Monad.State  ( StateT (..)   )
+import Data.Text            ( Text          )
 import Data.List            ( intercalate   )
 
-data Chrom = Chrom { sampid   :: String
+data Chrom = Chrom { sampleID :: String
                    , method   :: String
-                   , aqdate   :: String
-                   , srate    :: Double
-                   , ntimes   :: Int
-                   , tunits   :: String
-                   , sunits   :: String
-                   , tmult    :: Double
-                   , smult    :: Double
+                   , date     :: String
+                   , rate     :: Double
+                   , nTimes   :: Int
+                   , xUnits   :: String
+                   , yUnits   :: String
+                   , xMult    :: Double
+                   , yMult    :: Double
                    , signals  :: [Double]
                    } deriving ( Show )
 
-type Parser a = StateT [String] (Either String) a
+type ErrString = String
+type Parser a  = StateT [String] (Either ErrString) a

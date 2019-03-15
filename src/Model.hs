@@ -28,7 +28,7 @@ changeName f
           (name, ext)   = ( reverse rName, reverse rExt )
 
 timeMax :: Chrom -> Double
-timeMax c = (fromIntegral . ntimes $ c) * tmult c / srate c
+timeMax c = (fromIntegral . nTimes $ c) * xMult c / rate c
 
 cleanString :: String -> String
 cleanString = unwords . words
@@ -39,12 +39,12 @@ cleanString = unwords . words
 summarize :: Chrom -> String
 -- ^Summarize a chromatogram for display
 summarize c= intercalate "\n" xs
-    where trs = "  time range:   %0.1f--%0.1f " ++ tunits c
+    where trs = "  time range:   %0.1f--%0.1f " ++ xUnits c
           xs  = [ "Chromatogram summary:"
-                , "  sample id:    " ++ sampid c
-                , "  method file:  " ++ method c
-                , "  date & time:  " ++ aqdate c
-                , "  signal units: " ++ sunits c
+                , "  sample id:    " ++ sampleID c
+                , "  method file:  " ++ method   c
+                , "  date & time:  " ++ date     c
+                , "  signal units: " ++ yUnits   c
                 , printf trs (0 :: Double) (timeMax c) ]
 
 conversionInfo :: FilePath -> FilePath -> Chrom -> String
@@ -58,7 +58,7 @@ formatError :: FilePath -> String -> String
 -- ^Format an error string.
 formatError fp err = intercalate "\n" hs
     where hs = [ "File input: " ++ fp
-               , "  Error: " ++ err
+               , "  Error: "    ++ err
                ]
 
 ---------------------------------------------------------------------
@@ -66,20 +66,20 @@ formatError fp err = intercalate "\n" hs
 
 toCsv :: Chrom -> String
 toCsv c = intercalate "\n" hdr ++ "\n"
-    where hdr = [ "# Sample ID:    " ++ sampid c
-                , "# Method file:  " ++ method c
-                , "# Date & time:  " ++ aqdate c
-                , "# Time units:   " ++ tunits c
-                , "# Signal units: " ++ sunits c
+    where hdr = [ "# Sample ID:    " ++ sampleID c
+                , "# Method file:  " ++ method   c
+                , "# Date & time:  " ++ date     c
+                , "# Time units:   " ++ xUnits   c
+                , "# Signal units: " ++ yUnits   c
                 , plotChrom c ]
 
 getTimes :: Chrom -> [Double]
-getTimes c = take (ntimes c) . iterate ( + tstp ) $ 0
-    where tstp = tmult c / srate c
+getTimes c = take (nTimes c) . iterate ( + step ) $ 0
+    where step = xMult c / rate c
 
 plotChrom :: Chrom -> String
 plotChrom c = intercalate "\n" . zipWith go (getTimes c) $ (signals c)
-    where go t s = show t ++ "," ++ ( show . (* smult c) $ s )
+    where go x y = show x ++ "," ++ ( show . (* yMult c) $ y )
 
 ---------------------------------------------------------------------
 -- Parser
@@ -101,7 +101,7 @@ checkData :: Chrom -> Parser Chrom
 checkData c
     | nt == ns  = pure c
     | otherwise = lift . Left $ err
-    where nt  = ntimes c
+    where nt  = nTimes c
           ns  = length . signals $ c
           err = "Total data points does not equal absorbance count."
 
