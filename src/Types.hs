@@ -28,7 +28,7 @@ class Parameter a where
     readParam :: String -> Maybe a
 
 instance Parameter [Char] where
-    readParam = readMaybe . show . unwords . words
+    readParam = Just . unwords . words
 
 instance Parameter Int where
     readParam = formatNumPar
