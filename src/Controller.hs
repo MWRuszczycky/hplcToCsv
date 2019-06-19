@@ -2,21 +2,22 @@ module Controller
     ( routeArg
     ) where
 
-import Control.Monad.State  ( evalStateT        )
-import System.Directory     ( doesFileExist     )
-import Data.List            ( intercalate       )
+import Control.Monad.State  ( evalStateT            )
+import System.Directory     ( doesFileExist         )
+import Control.Exception    ( SomeException, catch  )
+import Data.List            ( intercalate           )
 import Types                ( Chrom  (..)
-                            , Parser (..)       )
-import Paths_hplcToCsv      ( version           )
-import Data.Version         ( showVersion       )
-import Text.Printf          ( printf            )
+                            , Parser (..)           )
+import Paths_hplcToCsv      ( version               )
+import Data.Version         ( showVersion           )
+import Text.Printf          ( printf                )
 import Model                ( changeName
                             , formatError
                             , toCsv
                             , toInfo
-                            , parse             )
+                            , parse                 )
 
----------------------------------------------------------------------
+-- =============================================================== --
 -- Main controller
 
 routeArg :: String -> IO String
@@ -30,7 +31,11 @@ routeArg fp          = do
        then convert fp
        else pure . formatError fp $ "File does not exist"
 
+-- =============================================================== --
+-- Run modes
+
 ---------------------------------------------------------------------
+-- Conversion of files
 
 convert :: FilePath -> IO String
 convert fn = do
@@ -40,6 +45,14 @@ convert fn = do
          Right c  -> do let csvfn = changeName fn
                         writeFile csvfn . toCsv $ c
                         pure $ toInfo fn csvfn c
+
+tryReadFile :: FilePath -> IO (Either String String)
+tryReadFile fp = catch ( Right <$> readFile fp ) handler
+    where handler :: SomeException -> IO (Either String String)
+          handler = pure . Left . show
+
+---------------------------------------------------------------------
+-- Display of help and information strings
 
 helpStr :: String
 helpStr = intercalate "\n" hs
