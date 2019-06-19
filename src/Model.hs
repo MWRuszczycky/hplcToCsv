@@ -22,14 +22,14 @@ import Types                ( Chrom  (..)
 -- Exported
 
 toInfo :: FilePath -> FilePath -> Chrom -> String
-toInfo fpOld fpNew c = intercalate "\n" hs
+toInfo fpOld fpNew c = unlines hs
     where hs = [ "File input: " ++ fpOld
                , "File converted to: " ++ fpNew
                , summarize c
                ]
 
 toCsv :: Chrom -> String
-toCsv c = intercalate "\n" hdr ++ "\n"
+toCsv c = unlines hdr
     where hdr = [ "# Sample ID:    " ++ sampleID c
                 , "# Method file:  " ++ method   c
                 , "# Date & time:  " ++ date     c
@@ -39,7 +39,7 @@ toCsv c = intercalate "\n" hdr ++ "\n"
 
 formatError :: FilePath -> String -> String
 -- ^Format an error string.
-formatError fp err = intercalate "\n" hs
+formatError fp err = unlines hs
     where hs = [ "File input: " ++ fp
                , "  Error: "    ++ err
                ]
@@ -48,7 +48,7 @@ formatError fp err = intercalate "\n" hs
 
 summarize :: Chrom -> String
 -- ^Summarize a chromatogram for display
-summarize c= intercalate "\n" xs
+summarize c= unlines xs
     where trs = "  time range:   %0.1f--%0.1f " ++ xUnits c
           xs  = [ "Chromatogram summary:"
                 , "  sample id:    " ++ sampleID c

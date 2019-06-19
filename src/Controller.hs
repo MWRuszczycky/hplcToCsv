@@ -22,8 +22,8 @@ import Model                ( changeName
 -- Main controller
 
 route :: [String] -> IO ()
-route ("--help":_)    = putStrLn helpStr
-route ("-h":_)        = putStrLn helpStr
+route ("--help":_)    = putStr helpStr
+route ("-h":_)        = putStr helpStr
 route ("--version":_) = putStrLn versionStr
 route ("-v":_)        = putStrLn versionStr
 route xs              = mapM convert xs >>= putStr . intercalate "\n"
@@ -54,7 +54,7 @@ tryReadFile fp = catch ( Right <$> readFile fp ) handler
 -- Display of help and information strings
 
 helpStr :: String
-helpStr = intercalate "\n" hs
+helpStr = unlines hs
     where hs = [ "usage:"
                , "  hplcToCsv filename [filename]..."
                , "options:"
