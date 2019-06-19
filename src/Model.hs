@@ -22,10 +22,9 @@ import Types                ( Chrom  (..)
 -- Exported
 
 toInfo :: FilePath -> FilePath -> Chrom -> String
-toInfo fpOld fpNew c = unlines hs
+toInfo fpOld fpNew c = unlines hs ++ summarize c
     where hs = [ "File input: " ++ fpOld
                , "File converted to: " ++ fpNew
-               , summarize c
                ]
 
 toCsv :: Chrom -> String
