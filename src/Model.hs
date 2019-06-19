@@ -37,7 +37,6 @@ toCsv c = intercalate "\n" hdr ++ "\n"
                 , "# Signal units: " ++ yUnits   c
                 , plotChrom c ]
 
-
 formatError :: FilePath -> String -> String
 -- ^Format an error string.
 formatError fp err = intercalate "\n" hs

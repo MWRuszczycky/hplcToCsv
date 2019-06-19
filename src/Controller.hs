@@ -1,5 +1,6 @@
 module Controller
-    ( routeArg
+    ( route
+    , convert
     ) where
 
 import Control.Monad.State  ( evalStateT            )
@@ -20,16 +21,12 @@ import Model                ( changeName
 -- =============================================================== --
 -- Main controller
 
-routeArg :: String -> IO String
-routeArg "--help"    = pure helpStr
-routeArg "-h"        = pure helpStr
-routeArg "--version" = pure versionStr
-routeArg "-v"        = pure versionStr
-routeArg fp          = do
-    exists <- doesFileExist fp
-    if exists
-       then convert fp
-       else pure . formatError fp $ "File does not exist"
+route :: [String] -> IO ()
+route ("--help":_)    = putStrLn helpStr
+route ("-h":_)        = putStrLn helpStr
+route ("--version":_) = putStrLn versionStr
+route ("-v":_)        = putStrLn versionStr
+route xs              = mapM convert xs >>= putStr . intercalate "\n"
 
 -- =============================================================== --
 -- Run modes
@@ -38,13 +35,15 @@ routeArg fp          = do
 -- Conversion of files
 
 convert :: FilePath -> IO String
-convert fn = do
-    xs <- lines <$> readFile fn
-    case evalStateT parse xs of
-         Left err -> pure . formatError fn $ err
-         Right c  -> do let csvfn = changeName fn
-                        writeFile csvfn . toCsv $ c
-                        pure $ toInfo fn csvfn c
+convert fp = tryReadFile fp >>= either err run
+    where run = finish fp . evalStateT parse . lines
+          err = pure . formatError fp
+
+finish :: FilePath -> Either String Chrom -> IO String
+finish fp (Left  e) = pure . formatError fp $ e
+finish fp (Right c) = let csvFp = changeName fp
+                      in  do writeFile csvFp . toCsv $ c
+                             pure . toInfo fp csvFp  $ c
 
 tryReadFile :: FilePath -> IO (Either String String)
 tryReadFile fp = catch ( Right <$> readFile fp ) handler

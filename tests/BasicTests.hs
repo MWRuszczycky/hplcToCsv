@@ -29,7 +29,7 @@ testDirectory = "tests/testing/"
 mockConversion :: FilePath -> FilePath -> Spec
 mockConversion source target = it "basic conversion test" action
     where action = do fp <- setupSrcFile source
-                      C.routeArg fp
+                      C.convert fp
                       result   <- readFile . M.changeName $ fp
                       expected <- readFile ( srcDirectory ++ target )
                       result `shouldBe` expected
