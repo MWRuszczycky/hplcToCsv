@@ -2,15 +2,14 @@
 
 module Types
     ( Chrom     (..)
-    , Parser    (..)
-    , ErrString (..)
+    , Parser
+    , ErrString
     , Parameter
     , readParam
     ) where
 
 import Control.Monad.State  ( StateT (..)   )
 import Text.Read            ( readMaybe     )
-import Data.List            ( intercalate   )
 
 data Chrom = Chrom { sampleID :: String
                    , method   :: String

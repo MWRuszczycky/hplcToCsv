@@ -11,9 +11,10 @@ import Control.Monad.State  ( StateT (..)
 import Data.List            ( intercalate    )
 import Text.Printf          ( printf         )
 import Text.Read            ( readMaybe      )
-import Types                ( Chrom  (..)
-                            , Parser (..)
+import Types                ( Chrom (..)
+                            , Parser
                             , Parameter
+                            , ErrString
                             , readParam      )
 
 -- =============================================================== --
@@ -36,7 +37,7 @@ toCsv c = unlines hdr
                 , "# Signal units: " ++ yUnits   c
                 , plotChrom c ]
 
-formatError :: FilePath -> String -> String
+formatError :: FilePath -> String -> ErrString
 -- ^Format an error string.
 formatError fp err = unlines hs
     where hs = [ "File input: " ++ fp
